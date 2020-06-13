@@ -23,4 +23,4 @@ This course includes scripting and how it connects user programs and OS utilitie
 
 
 
-This course is being taught by: Justin Goins
+This course is taught by: Justin Goins
