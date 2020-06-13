@@ -1,0 +1,270 @@
+#!/bin/bash
+#author: Onur Sasmaz
+#source: CS344 class examples and ss64
+#set -x
+temp_one="temp_one"
+temp_two="temp_two"
+temp_three="temp_three"
+temp_four="temp_four"
+testTranspose="testTranspose"
+
+#remove the temp files
+clean_me(){
+    rm -f temp_one
+    rm -f temp_two
+    rm -f temp_three
+    rm -f temp_four
+    rm -f testTranspose
+    rm -f temp_file
+
+}
+
+dims(){
+    col=$( head <$1 -n 1 | wc -w ) #Output the first line and Print only the word count. Source=ss64
+    row=$( wc -l <$1 ) #Print only the newline counts. Source=ss64
+    echo -e "$row $col"
+}
+
+
+
+transpose(){
+    col=$(head -1 $1 | wc -w) #Output the first line and Print only the word count.
+    for ((i=1; i <= $col; i++)); do
+    cut -f $i $1 | tr '\n' '\t' | head -c -1 >> $temp_four
+    echo -e >> $temp_four
+    done
+    cat $temp_four
+}
+
+
+mean(){
+
+#modified verison of code provided in Reading 1.4
+col=$( head -n 1 $1 | wc -w)    #Output the first line and Print only the word count.
+for ((i = 1; i <= col; i++)); do
+   cut -f $i -d $'\t' $1 > $temp_one    #remove out selected only '$i' of each line
+
+sum=0
+lineNum=0
+    while read myLine
+    do
+
+    sum=`expr $sum + $myLine` #increment sum
+    lineNum=`expr $lineNum + 1`
+    done <$temp_one
+    mean=$(( (sum + (lineNum/2)*( (sum>0)*2-1)) / lineNum )) #formila provided in Assignen1
+    tota="$tota $mean"
+done
+#transfer the tabs
+echo $tota | tr ' ' '\t'
+
+}
+
+
+add(){
+    m1_col=$( head <$1 -n 1 | wc -w ) #Output the first line and Print only the word count. Source=ss64
+    m1_row=$( wc -l <$1 ) #Print only the newline counts. Source=ss6
+    m2_col=$( head <$2 -n 1 | wc -w )
+    m2_row=$( wc -l <$2 )
+
+#check if  matrix1 equals to matrix2
+    if [[ $m1_row -ne $m2_row ]]; then
+    echo "Sorry Rows are not matching" >&2
+    exit 5
+    elif [[ m1_col -ne m2_col ]]; then
+    echo "Sorry Cols are not matching" >&2
+    exit 5
+    fi
+
+#transpose input in to temp_one and temp_two
+   cat $1 | tr '\t' '\n' >> $temp_one
+   cat $2 | tr '\t' '\n' >> $temp_two
+
+    while read line1 <&3 && read line2 <&4 #example code from piazza
+    do
+        for i in $line1
+            do
+                j=1
+                for j in $line2
+                    do
+                        counter=$(( counter + 1 ))
+                        sum=$(( $i + $j ))
+                        echo -n -e $sum
+                            if [ ! $counter -eq $m1_col ]; then
+                            #print tab if row not reached the end
+                            printf  '\t'
+                            else
+                            #print new line if row reaches the end
+                            printf '\n'
+                            counter=0
+                            fi
+
+                    done
+
+        done
+
+    done 3<$temp_one 4<$temp_two
+
+}
+
+
+multiply(){
+    m1_col=$( head <$1 -n 1 | wc -w ) #Output the first line and Print only the word count. Source=ss64
+    m1_row=$( wc -l <$1 ) #Print only the newline counts. Source=ss6
+    m2_col=$( head <$2 -n 1 | wc -w )
+    m2_row=$( wc -l <$2 )
+
+#check if row and cols are matching
+    if [[ $m1_col -ne $m2_row ]]; then
+    echo "Sorry Rows are not matching" >&2
+    exit 5
+    fi
+
+#transpose the data in to temp file
+transpose $2 > $testTranspose
+while read row
+do
+    col_counter=1
+    while read col
+    do
+    counter=1
+    total=0
+        while [[ $counter -le $m1_col ]] #example code from piazza
+        do
+            x=$(echo -e "$row" | cut -f $counter)
+            y=$(echo -e "$col" | cut -f $counter)
+            prod=$((x * y ))
+            total=$((total + prod))
+            ((counter++))
+#        echo "x: $x, y: $y, total: $total, prod: $prod"
+        done
+
+        if [[  $col_counter -eq $m2_col ]]; then
+        echo "$total"
+        else
+        echo -ne "$total\t"
+        ((col_counter++))
+        fi
+    done < $testTranspose
+done<$1
+
+
+}
+
+#usage of case to error handle
+main(){
+#example code from Assignment page
+#path to a file with passed-in contents,
+#no matter if they came via stdin or via a file specified on the commandline
+temp_file="temp_file$$"
+if [ "$#" = "1" ]
+then
+cat > "$temp_file"
+elif [ "$#" = "2" ]
+then
+temp_file=$2
+fi
+
+
+case $1 in
+    dims)
+
+        if [[ ! -z $2 && ! -r $2 ]]; then
+        echo "Sorry File provided is not readable" >&2
+        exit 5
+        fi
+        if [[ $# -gt 2 ]]; then
+        echo "Sorry Wrong Input!" >&2
+        exit 5
+        fi
+
+        dims $temp_file
+    ;;
+    transpose)
+        if [ ! $2 ]
+        then
+        echo "Please enter a Matrix!" 1>&2
+        exit 5
+        fi
+        if [[ ! -z $2 && ! -r $2 ]]; then
+#check if the file readable and exist
+        echo "Sorry File provided is not readable" >&2
+        exit 5
+        fi
+#check if argument more than expected
+        if [[ $# -gt 2 ]]; then
+        echo "Sorry Wrong Input!" >&2
+        exit 5
+        fi
+
+        transpose $2
+    ;;
+    mean)
+#check if user provided matrix
+        if [ ! $2 ]
+        then
+        echo "Please enter a metrix!" 1>&2
+        exit 5
+        fi
+#check if file readable
+        if [[ ! -z $2 && ! -r $2 ]]; then
+        echo "Sorry File provided is not readable" >&2
+        exit 5
+        fi
+#check if input more than needed
+        if [[ $# -gt 2 ]]; then
+        echo "Sorry Wrong Input!" >&2
+        exit 5
+        fi
+
+        mean $2
+    ;;
+    add)
+#check if the file is valid
+        if [[ ! -z $2 && ! -r $2 ]]; then
+        echo "Sorry File provided is not readable" >&2
+        exit 5
+        fi
+#check if user inputed more than needed
+        if [[ $# -gt 3 ]]; then
+        echo "Sorry Wrong Input!" >&2
+        exit 5
+        fi
+#check if user inputed less than needed
+        if [[ $# -lt 3 ]]; then
+        echo "Sorry Wrong Input!" >&2
+        exit 5
+        fi
+        add $2 $3
+    ;;
+    multiply)
+#check if the file is valid
+        if [[ ! -z $2 && ! -r $2 ]]; then
+        echo "Sorry File provided is not readable" >&2
+        exit 5
+        fi
+#check if user inputed more than needed
+        if [[ $# -gt 3 ]]; then
+        echo "Sorry Wrong Input!" >&2
+        exit 5
+        fi
+#check if user inputed less than needed
+
+        if [[ $# -lt 3 ]]; then
+        echo "Sorry Wrong Input!" >&2
+        exit 5
+        fi
+        multiply $2 $3
+    ;;
+    *)
+        echo "you entered wrong my man!" >&2
+        exit 5
+        ;;
+esac
+clean_me #call the clean_me function to delete temp files
+}
+
+
+main $1 "${@:2}" #call the function named by argument 1
+
+
