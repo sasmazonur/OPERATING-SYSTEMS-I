@@ -1,4 +1,4 @@
-# Matrices
+# Adventure
 ## Description
 This program implements a simple game akin to old text adventure games like Adventure using C and Unix:
 http://en.wikipedia.org/wiki/Colossal_Cave_Adventure
